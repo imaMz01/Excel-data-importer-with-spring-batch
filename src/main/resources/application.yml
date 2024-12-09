@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: Importer
+  datasource:
+    password: 061201
+    username: postgres
+    url: jdbc:postgresql://localhost:5432/StudentDB
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    database: postgresql
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+server:
+  port: 8081
