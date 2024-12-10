@@ -4,10 +4,11 @@ package com.ExcelData.Importer.Controller;
 import com.ExcelData.Importer.Dto.StudentDto;
 import com.ExcelData.Importer.Service.ServiceStudent;
 import lombok.RequiredArgsConstructor;
-import org.springframework.batch.core.Job;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
+import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
+import org.springframework.batch.core.repository.JobRestartException;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -21,7 +22,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
@@ -38,19 +43,28 @@ public class StudentController {
     }
 
     @PostMapping("/import")
-    public String importStudents(@RequestParam("file") MultipartFile file) {
-        try {
-            // Vous pouvez créer un JobParameters pour fournir le fichier à votre Job
-            JobParameters jobParameters = new JobParametersBuilder()
-                    .addString("file", file.getOriginalFilename())
-                    .toJobParameters();
+    public String importStudents(@RequestParam("file") MultipartFile file) throws Exception {
 
-            jobLauncher.run(importStudentJob, jobParameters);
+        String tempFilePath = saveTempFile(file);
 
-            return "Job started successfully!";
-        } catch (Exception e) {
-            return "Error starting job: " + e.getMessage();
-        }
+        // Create a JobParameters with the file path
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addString("file", tempFilePath)  // Passer le chemin du fichier comme paramètre
+                .toJobParameters();
+
+        // Launch the Spring Batch job
+        jobLauncher.run(importStudentJob, jobParameters);
+        Files.deleteIfExists(Paths.get(tempFilePath));  // Supprimer le fichier temporaire
+        System.out.println("Fichier temporaire supprimé : " + tempFilePath);
+        return "Job started successfully!";
+    }
+
+    private String saveTempFile(MultipartFile file) throws IOException {
+        // Save the file to disk to pass it to Spring Batch
+        Path tempFile = Files.createTempFile("import-", ".xlsx");
+        System.out.println("path ::"+tempFile );
+        file.transferTo(tempFile.toFile());
+        return tempFile.toString();
     }
 
     @GetMapping("/students")

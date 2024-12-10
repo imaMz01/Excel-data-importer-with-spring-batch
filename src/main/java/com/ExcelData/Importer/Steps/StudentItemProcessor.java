@@ -5,15 +5,11 @@ import org.springframework.batch.item.ItemProcessor;
 
 import java.util.List;
 
-public class StudentItemProcessor implements ItemProcessor<List<Student>,List<Student>> {
+public class StudentItemProcessor implements ItemProcessor<Student,Student> {
     @Override
-    public List<Student> process(List<Student> item) throws Exception {
-        item.forEach(
-                student -> {
-                    if(student.getAverage()>=10)
-                        student.setAdmitted(true);
-                }
-        );
+    public Student process(Student item) throws Exception {
+        if(item.getAverage()>=10)
+            item.setAdmitted(true);
         return item;
     }
 }

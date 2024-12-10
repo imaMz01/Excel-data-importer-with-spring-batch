@@ -9,13 +9,13 @@ import org.springframework.batch.item.ItemWriter;
 import java.util.List;
 
 @RequiredArgsConstructor
-public class StudentItemWriter implements ItemWriter<List<Student>> {
+public class StudentItemWriter implements ItemWriter<Student> {
 
     private final StudentRepository studentRepository;
     @Override
-    public void write(Chunk<? extends List<Student>> chunks) throws Exception {
-        for (List<Student> chunk : chunks) {
-            studentRepository.saveAll(chunk);
+    public void write(Chunk<? extends Student> chunks) throws Exception {
+        for (Student chunk : chunks) {
+            studentRepository.save(chunk);
         }
     }
 }

@@ -1,6 +1,5 @@
 package com.ExcelData.Importer.Confiig;
 
-import com.ExcelData.Importer.Dto.StudentDto;
 import com.ExcelData.Importer.Entity.Student;
 import com.ExcelData.Importer.Repository.StudentRepository;
 import com.ExcelData.Importer.Steps.StudentItemProcessor;
@@ -10,20 +9,18 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.configuration.annotation.StepScope;
 import org.springframework.batch.core.job.builder.JobBuilder;
-import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
-import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
 
 @Configuration
 @EnableBatchProcessing
@@ -36,15 +33,15 @@ public class BatchConfig {
 
     @Bean
     public Job importStudentJob(Step generateCertificatesStep) throws IOException {
-        return new JobBuilder("generateCertificatesJob", jobRepository)
+        return new JobBuilder("fetchDataFromExcelFileJob", jobRepository)
                 .start(importStudentStep())
                 .build();
     }
 
     @Bean
     public Step importStudentStep() throws IOException {
-        return new StepBuilder("generateCertificatesStep", jobRepository)
-                .<List<Student>, List<Student>>chunk(1, transactionManager)
+        return new StepBuilder("fetchDataFromExcelFileStep", jobRepository)
+                .<Student, Student>chunk(3, transactionManager)
                 .reader(studentItemReader(null))
                 .processor(studentItemProcessor())
                 .writer(studentItemWriter())
@@ -52,17 +49,18 @@ public class BatchConfig {
     }
 
     @Bean
-    public StudentItemReader studentItemReader(MultipartFile file) throws IOException {
-        return new StudentItemReader(file);
+    @StepScope  // Utilisation de StepScope pour permettre l'accès aux JobParameters
+    public StudentItemReader studentItemReader(@Value("#{jobParameters['file']}") String filePath) throws IOException {
+        return new StudentItemReader(filePath);
     }
 
     @Bean
-    public ItemProcessor<List<Student>, List<Student>> studentItemProcessor() {
-        return new StudentItemProcessor(); // Si vous avez un ItemProcessor
+    public ItemProcessor<Student, Student> studentItemProcessor() {
+        return new StudentItemProcessor();
     }
 
     @Bean
-    public ItemWriter<List<Student>> studentItemWriter() {
-        return new StudentItemWriter(studentRepository); // Votre writer pour persister les étudiants dans la base de données
+    public ItemWriter<Student> studentItemWriter() {
+        return new StudentItemWriter(studentRepository);
     }
 }
